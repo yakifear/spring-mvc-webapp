@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>New person</title>
+</head>
+<body>
+<form th:method="POST" th:action="@{/people}">
+    <label>
+        <input name="name" type="text" placeholder="Name"/>
+    </label>
+    <div th:if="${errors != null and errors.hasFieldErrors('name')}">
+        <a th:each="err : ${errors.getFieldErrors('name')}" th:text="${err.defaultMessage}" style="color:red"></a>
+    </div>
+
+    <br/>
+
+    <label>
+        <input name="age" type="number" placeholder="Age"/>
+    </label>
+    <div th:if="${errors != null and errors.hasFieldErrors('age')}">
+        <a th:each="err : ${errors.getFieldErrors('age')}" th:text="${err.defaultMessage}" style="color:red"></a>
+    </div>
+
+    <br/>
+
+    <label>
+        <input name="address" type="text" placeholder="Address"/>
+    </label>
+    <div th:if="${errors != null and errors.hasFieldErrors('address')}">
+        <a th:each="err : ${errors.getFieldErrors('address')}" th:text="${err.defaultMessage}" style="color:red"></a>
+    </div>
+
+    <br/>
+    <input type="submit" value="Create!"/>
+</form>
+<br/>
+<a href="/">home</a>
+</body>
+</html>
