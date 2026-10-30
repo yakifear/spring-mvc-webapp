@@ -26,7 +26,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                echo 'sosal?'
+                echo 'sosil?'
             }
         }
 
