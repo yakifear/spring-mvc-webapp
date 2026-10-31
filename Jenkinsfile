@@ -17,7 +17,7 @@ pipeline {
             steps {
                 sh 'mvn -v'
                 sh 'git --version'
-                checkout scm
+                sh 'git clone https://github.com/yakifear/spring-mvc-webapp.git -b dev'
                 sh 'ls -a'
             }
         }
