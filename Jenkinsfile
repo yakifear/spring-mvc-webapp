@@ -14,7 +14,7 @@ pipeline {
             steps {
                 sh 'cd /var/jenkins/workspace/cicd'
                 sh 'rm -rf /var/jenkins/workspace/cicd/*'
-                sh 'allure --version'
+                // sh 'allure --version'
             }
         }
 
