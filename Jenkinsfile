@@ -15,7 +15,8 @@ pipeline {
     stages {
         stage('Test') {
             steps {
-                echo 'Test'
+                sh 'cd /var/jenkins/workspace/cicd'
+                sh 'ls -a'
                 // checkout scm
             }
         }
