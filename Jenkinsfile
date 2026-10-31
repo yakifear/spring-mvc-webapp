@@ -4,7 +4,7 @@ pipeline {
     }
 
     options {
-        skipDefaultCheckout(true)
+        // skipDefaultCheckout(true)
     }
 
     tools {
@@ -15,10 +15,7 @@ pipeline {
     stages {
         stage('Test') {
             steps {
-                sh 'git --version'
-                checkout scm
-                sh 'mvn -v'
-                sh 'ls -a'
+                // checkout scm
             }
         }
 
