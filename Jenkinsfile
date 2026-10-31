@@ -3,9 +3,9 @@ pipeline {
         label 'Linux'
     }
 
-    options {
-        // skipDefaultCheckout(true)
-    }
+    // options {
+    //     skipDefaultCheckout(true)
+    // }
 
     tools {
       maven '3.10.0'
