@@ -6,6 +6,7 @@ pipeline {
     tools {
       maven '3.10.0'
       git 'linux-git-install-last'
+      allure '3.16.0'
     }
 
     stages {
