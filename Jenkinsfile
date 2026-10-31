@@ -9,6 +9,7 @@ pipeline {
 
     tools {
       maven '3.10.0'
+      git 'linux-git-install-last'
     }
 
     stages {
