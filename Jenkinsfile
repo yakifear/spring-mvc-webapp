@@ -3,10 +3,6 @@ pipeline {
         label 'Linux'
     }
 
-    // options {
-    //     skipDefaultCheckout(true)
-    // }
-
     tools {
       maven '3.10.0'
       git 'linux-git-install-last'
@@ -16,8 +12,7 @@ pipeline {
         stage('Test') {
             steps {
                 sh 'cd /var/jenkins/workspace/cicd'
-                sh 'ls -a'
-                // checkout scm
+                sh 'rm -rf /var/jenkins/workspace/cicd/*'
             }
         }
 
