@@ -9,15 +9,22 @@ pipeline {
 
     tools {
       maven '3.10.0'
-      git 'linux-git-install-last'
+    //   git 'linux-git-install-last'
     }
 
     stages {
         stage('Test') {
             steps {
+                checkout scmGit(
+                    branches: [[name: 'refs/heads/dev']],
+                    gitTool: 'linux-git-install-last',
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/yakifear/spring-mvc-webapp.git'
+                    ]]
+                )
                 sh 'mvn -v'
                 sh 'git --version'
-                sh 'git clone https://github.com/yakifear/spring-mvc-webapp.git -b dev'
+                // sh 'git clone https://github.com/yakifear/spring-mvc-webapp.git -b dev'
                 sh 'ls -a'
             }
         }
