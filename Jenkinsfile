@@ -5,7 +5,7 @@ pipeline {
 
     tools {
       maven '3.10.0'
-      git 'last'
+      git 'linux-git-install-last'
     }
 
     stages {
@@ -32,7 +32,7 @@ pipeline {
 
         stage('Server') {
             steps {
-                sh 'rm -rf spring-mvc-webapp'
+                // sh 'rm -rf spring-mvc-webapp'
                 sh 'ls -a'
             }
         }
