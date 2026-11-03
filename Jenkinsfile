@@ -41,12 +41,8 @@ pipeline {
             steps {
                 sh '''
                     mvn -DskipTests package
-
-                    # Готовим Kubernetes-манифест с тегом текущей сборки
                     sed "s|image: peni5/webapp:v2|image: ${IMAGE_NAME}:${IMAGE_TAG}|" \
                         webapp.yaml > webapp-deploy.yaml
-
-                    grep "image:" webapp-deploy.yaml
                 '''
             }
         }
@@ -62,53 +58,55 @@ pipeline {
                 ]) 
                 {
                     sh '''
-                    SSH_OPTS="-i $SSH_KEY \
-                        -o IdentitiesOnly=yes \
-                        -o StrictHostKeyChecking=yes \
-                        -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
+                        SSH_OPTS="-i $SSH_KEY \
+                            -o IdentitiesOnly=yes \
+                            -o StrictHostKeyChecking=yes \
+                            -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
 
-                    ssh $SSH_OPTS \
-                        "$SSH_USER@$VPS_HOST" \
-                        "mkdir -p $REMOTE_DIR"
+                        ssh $SSH_OPTS \
+                            "$SSH_USER@$VPS_HOST" \
+                            "mkdir -p '$REMOTE_DIR'"
 
-                    scp  $SSH_OPTS \
-                        "/var/jenkins/workspace/cicd/target/spring-mvc-app1.war" \
-                        "$SSH_USER@$VPS_HOST:$REMOTE_DIR/spring-mvc.war"
+                        scp $SSH_OPTS \
+                            target/spring-mvc-app1.war \
+                            "$SSH_USER@$VPS_HOST:$REMOTE_DIR/spring-mvc.war"
 
-                    scp  $SSH_OPTS \
-                        "/var/jenkins/workspace/cicd/Dockerfile" \
-                        "$SSH_USER@$VPS_HOST:$REMOTE_DIR/Dockerfile"
+                        scp $SSH_OPTS \
+                            Dockerfile \
+                            "$SSH_USER@$VPS_HOST:$REMOTE_DIR/Dockerfile"
 
-                    scp $SSH_OPTS \
-                        webapp-deploy.yaml \
-                        "$SSH_USER@$VPS_HOST:$REMOTE_DIR/webapp-deploy.yaml"
+                        scp $SSH_OPTS \
+                            webapp-deploy.yaml \
+                            "$SSH_USER@$VPS_HOST:$REMOTE_DIR/webapp-deploy.yaml"
 
-                    ssh $SSH_OPTS \
-                        "$SSH_USER@$VPS_HOST" \
-                        "cd '$REMOTE_DIR';
+                        ssh $SSH_OPTS \
+                            "$SSH_USER@$VPS_HOST" \
+                            "cd '$REMOTE_DIR';
 
-                        docker build \
-                            -t '$IMAGE_NAME:$IMAGE_TAG' \
-                            -f Dockerfile \
-                            .;
+                             docker build \
+                                -t '$IMAGE_NAME:$IMAGE_TAG' \
+                                -f Dockerfile \
+                                .;
 
-                        docker save \
-                            -o image.tar \
-                            '$IMAGE_NAME:$IMAGE_TAG';
+                             docker save \
+                                -o image.tar \
+                                '$IMAGE_NAME:$IMAGE_TAG';
 
-                        k3s ctr -n k8s.io images import image.tar;
+                             k3s ctr -n k8s.io images import image.tar;
 
-                        rm -f image.tar;
+                             rm -f image.tar;
 
-                        kubectl apply -f webapp-deploy.yaml;
+                             kubectl apply -f webapp-deploy.yaml;
 
-                        kubectl rollout status \
-                            deployment/webapp \
-                            --timeout=180s;
+                             kubectl rollout status \
+                                deployment/webapp \
+                                --timeout=180s;
 
-                    ssh  $SSH_OPTS \
-                        "$SSH_USER@$VPS_HOST" \
-                        "rm -rf /home/webapp/build/*"
+                             rm -f spring-mvc.war Dockerfile webapp-deploy.yaml"
+                             
+                        ssh $SSH_OPTS \
+                            "$SSH_USER@$VPS_HOST" \
+                            "rm -rf /home/webapp/build/*"
                     '''
                 }
             }
