@@ -38,17 +38,36 @@ pipeline {
         stage('Build') {
             steps {
                 sh '''
-                    cp /home/database.properties /var/jenkins/workspace/cicd/src/main/resources/
+                    set -eu
 
+                    echo "=== Checking database.properties source ==="
+                    ls -l /home/database.properties
+                    test -s /home/database.properties
+
+                    echo "=== Copying database.properties ==="
+                    cp /home/database.properties \
+                        src/main/resources/database.properties
+
+                    test -s src/main/resources/database.properties
+
+                    echo "=== Building WAR ==="
                     mvn -DskipTests package
-                    
+
+                    echo "=== Checking WAR contents ==="
+                    jar tf target/spring-mvc-app1.war \
+                        | grep -Fx 'WEB-INF/classes/database.properties'
+
+                    echo "=== Preparing Kubernetes manifest ==="
                     sed "s|image: peni5/webapp:v2|image: ${IMAGE_NAME}:${IMAGE_TAG}|" \
                         webapp.yaml > webapp-deploy.yaml
-                    
-                    mkdir -p ~/.ssh
-                    chmod 700 ~/.ssh
-                    ssh-keyscan -t ed25519 $VPS_HOST >> ~/.ssh/known_hosts
-                    ssh-keygen -lf ~/.ssh/known_hosts
+
+                    mkdir -p "$HOME/.ssh"
+                    chmod 700 "$HOME/.ssh"
+
+                    ssh-keyscan -H -t ed25519 "$VPS_HOST" \
+                        >> "$HOME/.ssh/known_hosts"
+
+                    chmod 600 "$HOME/.ssh/known_hosts"
                 '''
             }
         }
