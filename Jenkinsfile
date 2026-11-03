@@ -43,6 +43,7 @@ pipeline {
                     mvn -DskipTests package
                     sed "s|image: peni5/webapp:v2|image: ${IMAGE_NAME}:${IMAGE_TAG}|" \
                         webapp.yaml > webapp-deploy.yaml
+                    cp /home/database.properties /var/jenkins/workspace/cicd/src/main/resources/
                 '''
             }
         }
