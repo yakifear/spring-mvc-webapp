@@ -32,6 +32,7 @@ pipeline {
 
         stage('Server') {
             steps {
+                sh 'rm -rf spring-mvc-webapp'
                 sh 'ls -a'
             }
         }
