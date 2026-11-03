@@ -52,19 +52,6 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                    set +x
-
-                    echo "Key file size:"
-                    wc -c < "$SSH_KEY"
-
-                    echo "Key file header:"
-                    head -n 1 "$SSH_KEY" | tr -d '\\r'
-
-                    echo "Key validation:"
-                    ssh-keygen -y -f "$SSH_KEY" >/dev/null
-
-                    echo "Private key is valid!"
-
                     scp -i "$SSH_KEY" \
                         -o IdentitiesOnly=yes \
                         -o StrictHostKeyChecking=yes \
