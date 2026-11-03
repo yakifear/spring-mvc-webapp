@@ -5,7 +5,7 @@ pipeline {
 
     tools {
       maven '3.10.0'
-      git 'last'
+      git 'linux-git-install-last'
       allure '3.16.0'
     }
 
