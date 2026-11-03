@@ -38,6 +38,8 @@ pipeline {
         stage('Build') {
             steps {
                 sh '''
+                    cp /home/database.properties /var/jenkins/workspace/cicd/src/main/resources/
+
                     mvn -DskipTests package
                     
                     sed "s|image: peni5/webapp:v2|image: ${IMAGE_NAME}:${IMAGE_TAG}|" \
@@ -47,8 +49,6 @@ pipeline {
                     chmod 700 ~/.ssh
                     ssh-keyscan -t ed25519 $VPS_HOST >> ~/.ssh/known_hosts
                     ssh-keygen -lf ~/.ssh/known_hosts
-
-                    cp /home/database.properties /var/jenkins/workspace/cicd/src/main/resources/
                 '''
             }
         }
