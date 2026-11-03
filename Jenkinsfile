@@ -30,6 +30,12 @@ pipeline {
             }
         }
 
+        stage('integration') {
+            steps {
+                echo 'zdez budet push v main'
+            }
+        }
+
         stage('Build') {
             steps {
                 sh 'mvn -DskipTests package'
@@ -46,6 +52,8 @@ pipeline {
                     )
                 ]) {
                     sh '''
+                    ssh-keygen -y -f "$SSH_KEY" >/dev/null
+                    
                     scp -i "$SSH_KEY" \
                         -o IdentitiesOnly=yes \
                         -o StrictHostKeyChecking=yes \
