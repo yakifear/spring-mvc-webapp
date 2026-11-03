@@ -5,8 +5,6 @@ pipeline {
 
     tools {
       maven '3.10.0'
-      git 'linux-git-install-last'
-    //   allure '3.16.0'
     }
 
     environment {
@@ -41,8 +39,15 @@ pipeline {
             steps {
                 sh '''
                     mvn -DskipTests package
+                    
                     sed "s|image: peni5/webapp:v2|image: ${IMAGE_NAME}:${IMAGE_TAG}|" \
                         webapp.yaml > webapp-deploy.yaml
+                    
+                    mkdir -p ~/.ssh
+                    chmod 700 ~/.ssh
+                    ssh-keyscan -t ed25519 IP_ТВОЕГО_VPS >> ~/.ssh/known_hosts
+                    ssh-keygen -lf ~/.ssh/known_hosts
+                    
                     cp /home/database.properties /var/jenkins/workspace/cicd/src/main/resources/
                 '''
             }
