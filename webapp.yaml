@@ -1,3 +1,4 @@
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -21,7 +22,7 @@ spec:
       containers:
         - name: tomcat
           image: peni5/webapp:v2
-          imagePullPolicy: Always
+          imagePullPolicy: Never
 
           ports:
             - containerPort: 8080
