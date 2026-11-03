@@ -5,37 +5,78 @@ pipeline {
 
     tools {
       maven '3.10.0'
-      git 'linux-git-install-last'
+      git 'last'
       allure '3.16.0'
     }
 
-    stages {
-        stage('Test') {
-            steps {
-                sh 'cd /var/jenkins/workspace/cicd'
-                sh 'mvn -DskipTests package'
+    environment {
+        IMAGE_NAME = 'peni5/webapp'
+        VPS_HOST = '201.58.172.0'
+        REMOTE_DIR = '/home/webapp'
+    }
 
-                // sh 'rm -rf /var/jenkins/workspace/cicd/*'
-                // sh 'allure --version'
+    stages {
+
+        stage('Check') {
+            steps {
+                sh 'mvn --version'
+                sh 'git --version'
+                sh 'allure --version'
             }
         }
 
-        stage('Git') {
+        stage('Test') {
             steps {
-                echo 'stage Git'
+                sh 'mvn clean test'
             }
         }
 
         stage('Build') {
             steps {
-                echo 'sosil?'
+                sh 'mvn -DskipTests package'
             }
         }
 
-        stage('Server') {
+        stage('Deploy') {
             steps {
-                sh 'ls -a'
+                withCredentials([
+                    sshUserPrivateKey(
+                        credentialsId: 'server-ssh',
+                        keyFileVariable: 'SSH_KEY',
+                        usernameVariable: 'SSH_USER'
+                    )
+                ]) {
+                    sh '''
+                    scp -i "$SSH_KEY" \
+                        -o IdentitiesOnly=yes \
+                        -o StrictHostKeyChecking=yes \
+                        -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+                        "/var/jenkins/workspace/cicd/target/spring-mvc-app1.war" \
+                        "$SSH_USER@$VPS_HOST:$REMOTE_DIR/spring-mvc.war"
+
+                    scp -i "$SSH_KEY" \
+                        -o IdentitiesOnly=yes \
+                        -o StrictHostKeyChecking=yes \
+                        -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+                        "/var/jenkins/workspace/cicd/Dockerfile" \
+                        "$SSH_USER@$VPS_HOST:$REMOTE_DIR/Dockerfile"
+
+                    ssh -i "$SSH_KEY" \
+                        -o IdentitiesOnly=yes \
+                        -o StrictHostKeyChecking=yes \
+                        -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+                        "$SSH_USER@$VPS_HOST" \
+                        "ls -lh $REMOTE_DIR/spring-mvc.war"
+                    '''
+                    }
+                }
             }
+
+            stage('Clear') {
+                steps {
+                    sh 'rm -rf /var/jenkins/workspace/cicd/*'
+                }
+            }
+
         }
     }
-}
