@@ -6,15 +6,17 @@ pipeline {
     tools {
       maven '3.10.0'
       git 'linux-git-install-last'
+      allure '3.16.0'
     }
 
     stages {
         stage('Test') {
             steps {
-                sh 'mvn -v'
-                sh 'git --version'
-                sh 'git clone https://github.com/yakifear/spring-mvc-webapp.git -b dev'
-                sh 'ls -a'
+                sh 'cd /var/jenkins/workspace/cicd'
+                sh 'mvn -DskipTests package'
+
+                // sh 'rm -rf /var/jenkins/workspace/cicd/*'
+                // sh 'allure --version'
             }
         }
 
@@ -26,13 +28,12 @@ pipeline {
 
         stage('Build') {
             steps {
-                echo 'sosal?'
+                echo 'sosil?'
             }
         }
 
         stage('Server') {
             steps {
-                // sh 'rm -rf spring-mvc-webapp'
                 sh 'ls -a'
             }
         }
