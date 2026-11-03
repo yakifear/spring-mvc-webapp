@@ -69,7 +69,7 @@ pipeline {
 
                     ssh $SSH_OPTS \
                         "$SSH_USER@$VPS_HOST" \
-                        "mkdir -p $REMOTE_DIR" \
+                        "mkdir -p $REMOTE_DIR"
 
                     scp  $SSH_OPTS \
                         "/var/jenkins/workspace/cicd/target/spring-mvc-app1.war" \
