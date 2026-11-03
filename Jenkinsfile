@@ -45,9 +45,9 @@ pipeline {
                     
                     mkdir -p ~/.ssh
                     chmod 700 ~/.ssh
-                    ssh-keyscan -t ed25519 IP_ТВОЕГО_VPS >> ~/.ssh/known_hosts
+                    ssh-keyscan -t ed25519 $VPS_HOST >> ~/.ssh/known_hosts
                     ssh-keygen -lf ~/.ssh/known_hosts
-                    
+
                     cp /home/database.properties /var/jenkins/workspace/cicd/src/main/resources/
                 '''
             }
