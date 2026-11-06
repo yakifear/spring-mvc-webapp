@@ -19,9 +19,32 @@ pipeline {
         stage('Check') {
             steps {
                 sh '''
-                    mvn --version
-                    git --version
+                    set -eu
+
+                    echo "=== Agent user ==="
+                    whoami
+                    id
+                    echo "HOME=$HOME"
+
+                    echo "=== Docker environment ==="
+                    env | grep -E '^(DOCKER_HOST|DOCKER_CONTEXT)=' || true
+
+                    echo "=== Docker socket ==="
+                    ls -la /var/run/docker.sock || true
+
+                    echo "=== Docker contexts ==="
+                    docker context ls
+                    docker context show
+
+                    echo "=== Docker client ==="
                     docker --version
+
+                    echo "=== Docker client/server connection ==="
+                    docker version
+
+                    echo "=== Docker Engine info ==="
+                    docker info --format \
+                        'Server={{.ServerVersion}} OS={{.OperatingSystem}}'
                 '''
             }
         }
