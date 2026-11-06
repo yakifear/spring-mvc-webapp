@@ -1,10 +1,10 @@
 pipeline {
-    agent {
-        label 'Linux'
+    agent { 
+        label 'Linux' 
     }
 
     tools {
-      maven '3.10.0'
+        maven '3.10.0'
     }
 
     environment {
@@ -18,8 +18,11 @@ pipeline {
 
         stage('Check') {
             steps {
-                sh 'mvn --version'
-                sh 'git --version'
+                sh '''
+                    mvn --version
+                    git --version
+                    docker --version
+                '''
             }
         }
 
@@ -35,29 +38,51 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Build WAR') {
+            steps {
+                sh '''
+                    cp /home/database.properties \
+                        src/main/resources/database.properties
+
+                    echo "=== Building WAR ==="
+                    mvn -DskipTests package
+                '''
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                    rm -rf image-context
+                    mkdir -p image-context
+
+                    cp target/spring-mvc-app1.war \
+                        image-context/spring-mvc.war
+
+                    cp Dockerfile image-context/Dockerfile
+
+                    docker build \
+                        -t "$IMAGE_NAME:$IMAGE_TAG" \
+                        image-context
+
+                    docker save \
+                        -o image.tar \
+                        "$IMAGE_NAME:$IMAGE_TAG"
+
+                    test -s image.tar
+
+                    docker image inspect \
+                        "$IMAGE_NAME:$IMAGE_TAG" \
+                        --format '{{.Id}}'
+                '''
+            }
+        }
+
+        stage('Prepare Deployment') {
             steps {
                 sh '''
                     set -eu
 
-                    echo "=== Checking database.properties source ==="
-                    ls -l /home/database.properties
-                    test -s /home/database.properties
-
-                    echo "=== Copying database.properties ==="
-                    cp /home/database.properties \
-                        src/main/resources/database.properties
-
-                    test -s src/main/resources/database.properties
-
-                    echo "=== Building WAR ==="
-                    mvn -DskipTests package
-
-                    echo "=== Checking WAR contents ==="
-                    jar tf target/spring-mvc-app1.war \
-                        | grep -Fx 'WEB-INF/classes/database.properties'
-
-                    echo "=== Preparing Kubernetes manifest ==="
                     sed "s|image: peni5/webapp:v2|image: ${IMAGE_NAME}:${IMAGE_TAG}|" \
                         webapp.yaml > webapp-deploy.yaml
 
@@ -80,58 +105,33 @@ pipeline {
                         keyFileVariable: 'SSH_KEY',
                         usernameVariable: 'SSH_USER'
                     )
-                ]) 
-                {
+                ]) {
                     sh '''
                         SSH_OPTS="-i $SSH_KEY \
                             -o IdentitiesOnly=yes \
                             -o StrictHostKeyChecking=yes \
                             -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
 
-                        ssh $SSH_OPTS \
-                            "$SSH_USER@$VPS_HOST" \
+                        ssh $SSH_OPTS "$SSH_USER@$VPS_HOST" \
                             "mkdir -p '$REMOTE_DIR'"
 
-                        scp $SSH_OPTS \
-                            target/spring-mvc-app1.war \
-                            "$SSH_USER@$VPS_HOST:$REMOTE_DIR/spring-mvc.war"
+                        scp $SSH_OPTS image.tar \
+                            "$SSH_USER@$VPS_HOST:$REMOTE_DIR/image.tar"
 
-                        scp $SSH_OPTS \
-                            Dockerfile \
-                            "$SSH_USER@$VPS_HOST:$REMOTE_DIR/Dockerfile"
-
-                        scp $SSH_OPTS \
-                            webapp-deploy.yaml \
+                        scp $SSH_OPTS webapp-deploy.yaml \
                             "$SSH_USER@$VPS_HOST:$REMOTE_DIR/webapp-deploy.yaml"
 
-                        ssh $SSH_OPTS \
-                            "$SSH_USER@$VPS_HOST" \
+                        ssh $SSH_OPTS "$SSH_USER@$VPS_HOST" \
                             "cd '$REMOTE_DIR';
-
-                             docker build \
-                                -t '$IMAGE_NAME:$IMAGE_TAG' \
-                                -f Dockerfile \
-                                .;
-
-                             docker save \
-                                -o image.tar \
-                                '$IMAGE_NAME:$IMAGE_TAG';
 
                              k3s ctr -n k8s.io images import image.tar;
 
-                             rm -f image.tar;
-
                              kubectl apply -f webapp-deploy.yaml;
 
-                             kubectl rollout status \
-                                deployment/webapp \
-                                --timeout=180s;
+                             kubectl rollout status deployment/webapp \
+                                 --timeout=180s;
 
-                             rm -f spring-mvc.war Dockerfile webapp-deploy.yaml"
-                             
-                        ssh $SSH_OPTS \
-                            "$SSH_USER@$VPS_HOST" \
-                            "rm -rf /home/webapp/build/*"
+                             rm -f image.tar webapp-deploy.yaml"
                     '''
                 }
             }
@@ -139,7 +139,11 @@ pipeline {
 
         stage('Clear') {
             steps {
-                sh 'rm -rf /var/jenkins/workspace/cicd/*'
+                sh '''
+                    docker image rm "$IMAGE_NAME:$IMAGE_TAG" || true
+                    rm -rf image.tar image-context webapp-deploy.yaml
+                    rm -rf /var/jenkins/workspace/cicd/*
+                '''
             }
         }
     }
