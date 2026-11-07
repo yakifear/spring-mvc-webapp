@@ -22,9 +22,57 @@ pipeline {
             }
         }
 
-        stage('integration') {
+        stage('Promote to main') {
             steps {
-                echo 'zdez budet push v main'
+                withCredentials([
+                    gitUsernamePassword(
+                        credentialsId: 'github-push',
+                        gitToolName: 'Default'
+                    )
+                ]) {
+                    sh '''
+                        # Отдельная рабочая копия для main.
+                        PROMOTION_DIR="${WORKSPACE}@main-promotion-${BUILD_NUMBER}"
+
+                        cleanup() {
+                            git worktree remove --force "$PROMOTION_DIR" \
+                                >/dev/null 2>&1 || true
+                        }
+                        trap cleanup EXIT
+
+                        # Получаем актуальное состояние main.
+                        git fetch origin main
+
+                        # Создаём отдельную рабочую копию на основе main.
+                        git worktree add --detach "$PROMOTION_DIR" origin/main
+
+                        # Переносим в неё файлы из проверенного коммита dev.
+                        # Команда обновляет индекс и рабочие файлы, но не переключает
+                        # основной Jenkins workspace с dev на main.
+                        git -C "$PROMOTION_DIR" checkout "$GIT_COMMIT" -- .
+
+                        # Удаляем три файла только из подготовленной копии main.
+                        git -C "$PROMOTION_DIR" rm -f --ignore-unmatch -- \
+                            Dockerfile Jenkinsfile webapp.yaml
+
+                        echo "Changes prepared for main:"
+                        git -C "$PROMOTION_DIR" diff --cached --stat
+
+                        # Проверяем, что исключённые файлы не попадут в коммит.
+                        if git -C "$PROMOTION_DIR" ls-files --error-unmatch \
+                            Dockerfile Jenkinsfile webapp.yaml >/dev/null 2>&1; then
+                            echo "ERROR: excluded files are still tracked"
+                            exit 1
+                        fi
+
+                        # Коммитим и отправляем изменения, только если они есть.
+                        if [ -n "$(git -C "$PROMOTION_DIR" ls-files -- \
+                            Dockerfile Jenkinsfile webapp.yaml)" ]; then
+                            echo "ERROR: excluded files are still tracked"
+                            exit 1
+                        fi
+                    '''
+                }
             }
         }
 
