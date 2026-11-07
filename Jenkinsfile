@@ -59,17 +59,22 @@ pipeline {
                         git -C "$PROMOTION_DIR" diff --cached --stat
 
                         # Проверяем, что исключённые файлы не попадут в коммит.
-                        if git -C "$PROMOTION_DIR" ls-files --error-unmatch \
-                            Dockerfile Jenkinsfile webapp.yaml >/dev/null 2>&1; then
+                        if [ -n "$(git -C "$PROMOTION_DIR" ls-files -- \
+                            Dockerfile Jenkinsfile webapp.yaml)" ]; then
                             echo "ERROR: excluded files are still tracked"
                             exit 1
                         fi
 
                         # Коммитим и отправляем изменения, только если они есть.
-                        if [ -n "$(git -C "$PROMOTION_DIR" ls-files -- \
-                            Dockerfile Jenkinsfile webapp.yaml)" ]; then
-                            echo "ERROR: excluded files are still tracked"
-                            exit 1
+                        if git -C "$PROMOTION_DIR" diff --cached --quiet; then
+                            echo "No changes to promote."
+                        else
+                            git -C "$PROMOTION_DIR" \
+                                -c user.name="Jenkins" \
+                                -c user.email="jenkins@localhost" \
+                                commit -m "Promote dev build ${BUILD_NUMBER} to main"
+
+                            git -C "$PROMOTION_DIR" push origin HEAD:refs/heads/main
                         fi
                     '''
                 }
